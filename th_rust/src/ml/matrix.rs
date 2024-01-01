@@ -142,7 +142,56 @@ impl Matrix {
         return sum;
     }
 
-    // TODO:: compute psuedo-inverse through modified svd
+    // currently using guass-jordan elim. method
+    // TODO : error handling and reserach other methods.
+    pub fn inv(&self) -> Matrix {
+        if self.m != self.n {
+            panic!("inv: only square matrix can have inverses");
+        }
+
+        let mut x = Matrix { data: self.data.clone(),
+            m: self.m, 
+            n: self.n,
+            name: String::from("inversion") 
+        };
+        let mut inverse = eye(self.m);
+        let n = self.m;
+
+        for i in 0..n {
+            let mut fact = x.data[self.get_index(i, i)];
+            if fact == 0.0 {
+                panic!("Inverse cannot exists, there are dependent vectors");
+            }
+            for j in 0..n {
+                let index = x.get_index(i, j);
+                x.data[index] /= fact;
+                inverse.data[index] /= fact;
+            }
+            for j in i+1..n {
+                fact = x.data[x.get_index(j,i)];
+                for k in 0..n {
+                    let left_index = x.get_index(j, k);
+                    let right_index = x.get_index(i, k);
+                    x.data[left_index] -= fact*x.data[right_index];
+                    inverse.data[left_index] -= fact*inverse.data[right_index];
+                }
+            }
+        }
+
+        for i in (1..n).rev() {
+            for j in (0..i).rev() {
+                let fact = x.data[x.get_index(j, i)];
+                for k in 0..n {
+                    let left_index = x.get_index(j, k);
+                    let right_index = x.get_index(i, k);
+                    x.data[left_index] -= fact*x.data[right_index];
+                    inverse.data[left_index] -= fact*inverse.data[right_index];
+                }
+            }
+        }
+
+        return inverse;
+    }
 
 }
 
@@ -203,3 +252,16 @@ pub fn matmul2d(x: &Matrix, y: &Matrix) -> Matrix {
     return z;
 }
 
+pub fn eye(m: u32) -> Matrix {
+    let mut eye = Matrix { 
+        data: vec![0.0; (m*m) as usize], 
+        m: m, 
+        n: m, 
+        name: String::from("Identity matrix")
+    };
+    for i in 0..m{
+        let index = eye.get_index(i, i);
+        eye.data[index] = 1.0;
+    }
+    return eye;
+}
